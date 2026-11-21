@@ -12,8 +12,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - run: gradle :app:assembleDebug --no-daemon
+      - name: Build
+        run: |
+          S=$(find . -name settings.gradle.kts -not -path './.git/*' | head -n1)
+          if [ -z "$S" ]; then echo "No settings.gradle.kts in the repo. Unzip GlassIcons.zip and upload its contents, not the zip itself."; ls -R | head -50; exit 1; fi
+          cd "$(dirname "$S")"
+          gradle :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: GlassIcons-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: "**/app/build/outputs/apk/debug/*.apk"
