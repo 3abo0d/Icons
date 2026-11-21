@@ -12,13 +12,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Build
+      - name: Unzip project
         run: |
-          S=$(find . -name settings.gradle.kts -not -path './.git/*' | head -n1)
-          if [ -z "$S" ]; then echo "No settings.gradle.kts in the repo. Unzip GlassIcons.zip and upload its contents, not the zip itself."; ls -R | head -50; exit 1; fi
-          cd "$(dirname "$S")"
-          gradle :app:assembleDebug --no-daemon
+          Z=$(find . -maxdepth 2 -iname 'GlassIcons*.zip' -not -path './.git/*' | head -n1)
+          if [ -z "$Z" ]; then echo "GlassIcons.zip not found in the repo"; ls -R | head -50; exit 1; fi
+          rm -rf proj && mkdir proj && unzip -q -o "$Z" -d proj
+          S=$(find proj -name settings.gradle.kts | head -n1)
+          if [ -z "$S" ]; then echo "settings.gradle.kts not found inside the zip"; exit 1; fi
+          echo "PROJ=$(dirname "$S")" >> "$GITHUB_ENV"
+      - name: Build
+        run: cd "$PROJ" && gradle :app:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: GlassIcons-debug
-          path: "**/app/build/outputs/apk/debug/*.apk"
+          path: "proj/**/app/build/outputs/apk/debug/*.apk"
